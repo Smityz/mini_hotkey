@@ -7,29 +7,24 @@
 #include <atomic>
 #include <unistd.h>
 #include <bits/shared_ptr_atomic.h>
+#include "readerwriterqueue/readerwriterqueue.h"
 
 using namespace std;
 
 class bar
 {
 public:
-    bar() : num(-1)
-    {
-        v.clear();
-    }
-    explicit bar(vector<int> &in) : num(-1)
-    {
-        for (auto iter : in)
-            v.push_back(iter);
-    }
     int get_num()
     {
-        for (auto iter : v)
+        int num = -1;
+        int sz = 5;
+        int t = 0;
+        while (queue.try_dequeue(t) && (--sz))
         {
-            num = max(iter, num);
+            num = max(t, num);
         }
         //usleep(10);
-        if (num >= 100)
+        if (num >= 100 || num < -1)
         {
             printf("Fault %d\n", num);
         }
@@ -38,26 +33,38 @@ public:
     void update(vector<int> &in)
     {
         for (auto iter : in)
-            v.push_back(iter);
+            queue.try_enqueue(iter);
     }
 
 private:
-    int num;
-    vector<int> v;
+    moodycamel::ReaderWriterQueue<int> queue;
 };
 
-atomic<bool> flag;
-shared_ptr<bar> now_using, ptr_0, ptr_1, ptr_2;
-int max_read_times = 1e7, max_write_times = 200;
+atomic<int> state;
+shared_ptr<bar> ptr_0, ptr_1, ptr_2;
+atomic<int> using_cnt;
+int max_read_times = 1e5, max_write_times = 1e5;
 int st;
 
 void get_func()
 {
     for (int k = 0; k <= max_read_times; k++)
     {
-        auto temp =
-            atomic_load_explicit(&now_using, std::memory_order_seq_cst);
-        temp->get_num();
+        switch (state.load())
+        {
+        case 0:
+            ptr_0->get_num();
+            state.store(1);
+            return;
+        case 1:
+            ptr_1->get_num();
+            state.store(2);
+            return;
+        case 2:
+            ptr_2->get_num();
+            state.store(0);
+            return;
+        }
     }
 }
 
@@ -65,17 +72,24 @@ void set_func()
 {
     for (int k = 0; k <= max_write_times; k++)
     {
-        if (k % 3 == 0)
+        vector<int> temp;
+        temp.clear();
+        int cnt = rand() % 10;
+        for (int i = 0; i < cnt; i++)
         {
-            std::atomic_exchange(&now_using, ptr_0);
+            temp.push_back(rand() % 100);
         }
-        if (k % 3 == 1)
+        switch (state.load())
         {
-            std::atomic_exchange(&now_using, ptr_1);
-        }
-        if (k % 3 == 2)
-        {
-            std::atomic_exchange(&now_using, ptr_2);
+        case 0:
+            ptr_0->update(temp);
+            return;
+        case 1:
+            ptr_1->update(temp);
+            return;
+        case 2:
+            ptr_2->update(temp);
+            return;
         }
     }
 }
@@ -83,17 +97,13 @@ void set_func()
 int main()
 {
     srand((unsigned)time(NULL));
-    vector<int> v0 = {2, 1, 3};
-    vector<int> v1 = {1, 2, 3, 4, 5};
-    vector<int> v2 = {};
-    ptr_0 = std::make_shared<bar>(v0);
-    ptr_1 = std::make_shared<bar>(v1);
-    ptr_2 = std::make_shared<bar>(v2);
-    now_using = ptr_0;
+    ptr_0 = std::make_shared<bar>();
+    ptr_1 = std::make_shared<bar>();
+    ptr_2 = std::make_shared<bar>();
     std::thread t1(get_func);
     std::thread t2(set_func);
     t2.join();
     t1.join();
 }
 
-// g++ atomic_exchange.cpp -o atomic_exchange -pthread && ./atomic_exchange > atomic_exchange.out
+// g++ mini_hotkey.cpp -o mini_hotkey -pthread && ./atomic_exchange > atomic_exchange.out
