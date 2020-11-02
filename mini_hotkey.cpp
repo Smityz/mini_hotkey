@@ -102,8 +102,10 @@ int main()
     ptr_2 = std::make_shared<bar>();
     std::thread t1(get_func);
     std::thread t2(set_func);
+    //std::thread t3(set_func);
+    //t3.join();
     t2.join();
     t1.join();
 }
 
-// g++ mini_hotkey.cpp -o mini_hotkey -pthread && ./atomic_exchange > atomic_exchange.out
+// g++ mini_hotkey.cpp -o mini_hotkey -pthread -fsanitize=thread -fPIE -pie -g -std=c++11 && ./mini_hotkey
