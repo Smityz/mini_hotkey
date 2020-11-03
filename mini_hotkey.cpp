@@ -41,14 +41,14 @@ private:
 
 atomic<int> state;
 shared_ptr<bar> ptr_0, ptr_1;
-int max_get_times = 1e3;
-int max_set_times = 1e5;
-int max_reset_times = 200;
+int analyse_data_times = 1e3;
+int capture_data_times = 1e5;
+int reset_collector_times = 200;
 
 void analyse_data()
 {
-    usleep((max_set_times / (max_get_times * 60));
-    for (int k = 0; k <= max_get_times; k++)
+    usleep(capture_data_times / (analyse_data_times * 60));
+    for (int k = 0; k <= analyse_data_times; k++)
     {
         switch (state.load())
         {
@@ -69,7 +69,7 @@ void analyse_data()
 
 void capture_data()
 {
-    for (int k = 0; k <= max_set_times; k++)
+    for (int k = 0; k <= capture_data_times; k++)
     {
         vector<int> temp;
         temp.clear();
@@ -94,8 +94,8 @@ void capture_data()
 
 void reset_collector()
 {
-    usleep((max_set_times / max_reset_times) * 60);
-    for (int k = 0; k <= max_reset_times; k++)
+    usleep((capture_data_times / reset_collector_times) * 60);
+    for (int k = 0; k <= reset_collector_times; k++)
     {
         state.store(2);
         ptr_0->clear();
