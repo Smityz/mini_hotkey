@@ -7,7 +7,7 @@
 #include <atomic>
 #include <unistd.h>
 #include <bits/shared_ptr_atomic.h>
-#include "readerwriterqueue/readerwriterqueue.h"
+#include "concurrentqueue/concurrentqueue.h"
 
 using namespace std;
 
@@ -23,6 +23,7 @@ public:
         {
             num = max(t, num);
         }
+        printf("Max num: %d\n", num);
         //usleep(10);
         if (num >= 100 || num < -1)
         {
@@ -35,42 +36,50 @@ public:
         for (auto iter : in)
             queue.try_enqueue(iter);
     }
+    void clear()
+    {
+        int t;
+        while (queue.try_dequeue(t))
+            ;
+    }
 
 private:
-    moodycamel::ReaderWriterQueue<int> queue;
+    moodycamel::ConcurrentQueue<int> queue;
 };
 
 atomic<int> state;
 shared_ptr<bar> ptr_0, ptr_1, ptr_2;
 atomic<int> using_cnt;
-int max_read_times = 1e5, max_write_times = 1e5;
+int max_get_times = 1e3;
+int max_set_times = 1e5;
+int max_reset_times = 200;
 int st;
 
 void get_func()
 {
-    for (int k = 0; k <= max_read_times; k++)
+    usleep(max_set_times / (max_get_times * 60));
+    for (int k = 0; k <= max_get_times; k++)
     {
         switch (state.load())
         {
         case 0:
             ptr_0->get_num();
             state.store(1);
-            return;
+            break;
         case 1:
             ptr_1->get_num();
             state.store(2);
-            return;
+            break;
         case 2:
-            ptr_2->get_num();
             state.store(0);
-            return;
+            break;
         }
     }
 }
 
 void set_func()
 {
-    for (int k = 0; k <= max_write_times; k++)
+    for (int k = 0; k <= max_set_times; k++)
     {
         vector<int> temp;
         temp.clear();
@@ -83,14 +92,25 @@ void set_func()
         {
         case 0:
             ptr_0->update(temp);
-            return;
+            break;
         case 1:
             ptr_1->update(temp);
-            return;
+            break;
         case 2:
-            ptr_2->update(temp);
-            return;
+            break;
         }
+    }
+}
+
+void reset_func()
+{
+    usleep(max_set_times / (max_reset_times * 60));
+    for (int k = 0; k <= max_reset_times; k++)
+    {
+        state.store(2);
+        ptr_0->clear();
+        ptr_1->clear();
+        state.store(0);
     }
 }
 
@@ -102,8 +122,10 @@ int main()
     ptr_2 = std::make_shared<bar>();
     std::thread t1(get_func);
     std::thread t2(set_func);
-    //std::thread t3(set_func);
-    //t3.join();
+    std::thread t3(reset_func);
+    std::thread t4(set_func);
+    t4.join();
+    t3.join();
     t2.join();
     t1.join();
 }
