@@ -53,7 +53,7 @@ int max_get_times = 1e3;
 int max_set_times = 1e5;
 int max_reset_times = 200;
 
-void get_func()
+void analyse_data()
 {
     usleep(max_set_times / (max_get_times * 60));
     for (int k = 0; k <= max_get_times; k++)
@@ -75,7 +75,7 @@ void get_func()
     }
 }
 
-void set_func()
+void capture_data()
 {
     for (int k = 0; k <= max_set_times; k++)
     {
@@ -100,7 +100,7 @@ void set_func()
     }
 }
 
-void reset_func()
+void reset_collector()
 {
     usleep(max_set_times / (max_reset_times * 60));
     for (int k = 0; k <= max_reset_times; k++)
@@ -117,10 +117,10 @@ int main()
     srand((unsigned)time(NULL));
     ptr_0 = std::make_shared<bar>();
     ptr_1 = std::make_shared<bar>();
-    std::thread t1(get_func);
-    std::thread t2(set_func);
-    std::thread t3(reset_func);
-    std::thread t4(set_func);
+    std::thread t1(analyse_data);
+    std::thread t2(capture_data);
+    std::thread t3(reset_collector);
+    std::thread t4(capture_data);
     t4.join();
     t3.join();
     t2.join();
