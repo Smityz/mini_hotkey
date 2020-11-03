@@ -1,12 +1,5 @@
 #include <bits/stdc++.h>
-#include <iostream>
-#include <utility>
-#include <thread>
-#include <chrono>
-#include <functional>
-#include <atomic>
 #include <unistd.h>
-#include <bits/shared_ptr_atomic.h>
 #include "concurrentqueue/concurrentqueue.h"
 
 using namespace std;
@@ -24,7 +17,6 @@ public:
             num = max(t, num);
         }
         printf("Max num: %d\n", num);
-        //usleep(10);
         if (num >= 100 || num < -1)
         {
             printf("Fault %d\n", num);
@@ -55,7 +47,7 @@ int max_reset_times = 200;
 
 void analyse_data()
 {
-    usleep(max_set_times / (max_get_times * 60));
+    usleep((max_set_times / max_get_times) * 60);
     for (int k = 0; k <= max_get_times; k++)
     {
         switch (state.load())
@@ -102,7 +94,7 @@ void capture_data()
 
 void reset_collector()
 {
-    usleep(max_set_times / (max_reset_times * 60));
+    usleep((max_set_times / max_reset_times) * 60);
     for (int k = 0; k <= max_reset_times; k++)
     {
         state.store(2);
@@ -127,4 +119,4 @@ int main()
     t1.join();
 }
 
-// g++ mini_hotkey.cpp -o mini_hotkey -pthread -fsanitize=thread -fPIE -pie -g -std=c++11 && ./mini_hotkey
+// run shell commands
