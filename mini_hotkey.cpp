@@ -48,12 +48,10 @@ private:
 };
 
 atomic<int> state;
-shared_ptr<bar> ptr_0, ptr_1, ptr_2;
-atomic<int> using_cnt;
+shared_ptr<bar> ptr_0, ptr_1;
 int max_get_times = 1e3;
 int max_set_times = 1e5;
 int max_reset_times = 200;
-int st;
 
 void get_func()
 {
@@ -119,7 +117,6 @@ int main()
     srand((unsigned)time(NULL));
     ptr_0 = std::make_shared<bar>();
     ptr_1 = std::make_shared<bar>();
-    ptr_2 = std::make_shared<bar>();
     std::thread t1(get_func);
     std::thread t2(set_func);
     std::thread t3(reset_func);
