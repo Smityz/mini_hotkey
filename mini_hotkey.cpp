@@ -47,7 +47,7 @@ int max_reset_times = 200;
 
 void analyse_data()
 {
-    usleep((max_set_times / max_get_times) * 60);
+    usleep((max_set_times / (max_get_times * 60));
     for (int k = 0; k <= max_get_times; k++)
     {
         switch (state.load())
@@ -120,3 +120,4 @@ int main()
 }
 
 // run shell commands
+// g++ mini_hotkey.cpp -o mini_hotkey -pthread -fsanitize=thread -fPIE -pie -g -std=c++11 && ./mini_hotkey
