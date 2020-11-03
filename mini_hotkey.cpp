@@ -83,7 +83,7 @@ void set_func()
     {
         vector<int> temp;
         temp.clear();
-        int cnt = rand() % 10;
+        int cnt = rand() % 10 + 1;
         for (int i = 0; i < cnt; i++)
         {
             temp.push_back(rand() % 100);
